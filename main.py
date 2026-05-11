@@ -30,7 +30,7 @@ app.add_middleware(
 async def get_all_users_aggregated():
     #small helper
     def to_val(val):
-        if val is None or val == "na":
+        if val is None or val =="na":
             return -1
         return val.value if hasattr(val, "value") else val
     
@@ -134,10 +134,12 @@ async def get_all_users_aggregated():
 
                 session.compute_hoverings()
                 for hovering in session.hoverings:
+                    start_hover = (hovering.from_ts - session.from_ts).total_seconds()
+                    end_hover = (hovering.to_ts - session.from_ts).total_seconds()
                     session_hoverings.append({
                     "component": hovering.component,
-                    "start": (hovering.from_ts - session.from_ts).total_seconds(),
-                    "end": (hovering.to_ts - session.from_ts).total_seconds(),
+                    "start": start_hover - 0.001 if end_hover == start_hover else start_hover,
+                    "end": end_hover + 0.001 if end_hover == start_hover else end_hover,
                     "chapter": hovering.chapter,
                     "context": hovering.context.type
                     })          

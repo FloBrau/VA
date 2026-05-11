@@ -219,8 +219,8 @@ if (firstSessionId) {
 
 
 //Session stream prep
-let comp_labels = {"-2": "Keyboard", "-1": "Not Specified", "0": "Fulltext", "1": "Snippets", "2": "Tilebar", 
-                     "3": "WordCloud", "4": "Topiccloud", "5": "Searchbar", "6": "Imageslider"};
+let comp_labels = {"-2": "Keyboard", "-1": "Not Specified", "undefined": "Not Specified", "0": "Fulltext", "1": "Snippets",
+                   "2": "Tilebar", "3": "WordCloud", "4": "Topiccloud", "5": "Searchbar", "6": "Imageslider"};
 let context_labels = {0: "Word Cloud Term", 1: "TopicCloud Term", 2: "History Term", 3: "Chapter Expanded",
                         4: "Chapter Collapsed", 5: "Topicbar Interaction", 6: "Tilebar Item", 7: "Snippet Expansion",
                         8: "Jump to Fulltext", 9: "Searchbar Click", 10: "Image Navigation", 11: "Image Enlarged",
@@ -233,18 +233,51 @@ let legend_labels = ["Mouse Move", "Mouse Scroll", "Keypress", "Mouse Click"];
 
 //Zoom prep
 let px_per_second = null;
+let offset = 0;
 let rerender = null;
+let last_bar_count = 0;
 
+//Zoom
 document.getElementById("stream-container").addEventListener("wheel", (event) => {
     event.preventDefault(); //disables normal scrolling
-    if (!px_per_second) return;
+    if (!rerender) return;
     let factor = event.deltaY < 0 ? 1.2 : 0.8;
     px_per_second *= factor;
-    rerender();
+    rerender()
 }, {passive: false});
+
+
+//mouse drag prep
+let is_dragging = false;
+let drag_start_x = null;
+let drag_start_offset = null;
+
+//mouse drag
+document.getElementById("stream-container").addEventListener("mousedown", (event) => {
+    is_dragging = true;
+    drag_start_x = event.clientX;
+    drag_start_offset = offset
+});
+
+document.addEventListener("mouseup", (_) => {
+    is_dragging = false;
+});
+
+document.getElementById("stream-container").addEventListener("mousemove", (event) => {
+    if (!is_dragging || !rerender) return;
+    let delta_pixel = event.clientX - drag_start_x;
+    let move = delta_pixel / px_per_second;
+    offset = drag_start_offset - move;
+    rerender();
+});
     
+
+
+
+
+
 //Histo     
-function render_hist(events, active_types, container, bin_interval, common, plot_width) {
+function render_hist(events, active_types, container, bin_interval, common, plot_width, y_max = null) {
     let main = document.querySelector(".main-content");
     let scroll = main.scrollTop;
     let old = container.querySelector(".histo-plot");
@@ -253,14 +286,14 @@ function render_hist(events, active_types, container, bin_interval, common, plot
     let plot_histo = Plot.plot({
         width: plot_width, height: 250, marginLeft: 70, marginBottom: 5, marginRight: 20,
         x: {... common, ticks: [], label: null, axis: null},
-        y: {label: "Event Intensity", grid: true, nice: true, ticks: 5},
+        y: {label: "Event Intensity", grid: true, nice: true, domain: y_max ? [0, y_max] : undefined, ticks: 5},
         marks: [
             Plot.text(["Mouse\nand\nKeypress\nEvents"], {
                 frameAnchor: "left", dx: -47, fontSize: 10, textAnchor: "middle", lineHeight: 1.2
             }),
             ...types.filter(type => active_types.has(type)).map((type) => {
                 let color_index = types.indexOf(type);
-                return Plot.rectY(events.filter(data => data.type === type), 
+                return Plot.rectY(events.filter(data => data.type === type && data.time >= common.domain[0] && data.time <= common.domain[1]) ,
                     Plot.binX({y: "count",
                          title: (bin) => { 
                             let count = bin.length;
@@ -278,12 +311,14 @@ function render_hist(events, active_types, container, bin_interval, common, plot
                             return `${legend_labels[color_index]}\nEvents: ${count}\nComponent(s): ${components.join(", ")}`
                             }}, 
                         {x: "time", fill: colors[color_index], interval: bin_interval,
-                         fillOpacity: type === "MOUSE_MOVE" ? 0.5 : 0.8, inset: 0.1})
+                         fillOpacity: type === "MOUSE_MOVE" ? 0.5 : 0.8, inset: 0.1, clip: true,})
                 );
             }),  
             Plot.ruleY([0], {strokeWidth: 1.5})
         ]
     });
+
+
 
     plot_histo.classList.add("histo-plot");
     plot_histo.style.margin = "0";
@@ -293,6 +328,8 @@ function render_hist(events, active_types, container, bin_interval, common, plot
     requestAnimationFrame(() => main.scrollTop = scroll); 
 }
 
+
+let leg_activate = null;
 //Histo Legend (some would say i stole this idea)
 function render_legend(container, active_types, events, bin_interval, common) {
     let legend = document.createElement("div");
@@ -302,11 +339,14 @@ function render_legend(container, active_types, events, bin_interval, common) {
         let item = document.createElement("span");
         item.style.cssText = "cursor: pointer; display: inline-flex; align-items: center; gap: 4px;";
         item.innerHTML = `<span style = "display: inline-block; width: 11px; height: 11px; background:${colors[index]};"></span>${legend_labels[index]}`;
+        
         item.addEventListener("click", (_) => {
             active_types.has(type) ? active_types.delete(type) : active_types.add(type);
             item.style.opacity = active_types.has(type) ? "1" : "0.4";
             item.style.textDecoration = active_types.has(type) ? "none" : "line-through";
-            render_hist(events, active_types, container, bin_interval, common, total_length_x * px_per_second);
+            leg_activate = true;
+            if (rerender) rerender();
+            leg_activate =  null;   
         });
         legend.appendChild(item);
     });
@@ -316,8 +356,9 @@ function render_legend(container, active_types, events, bin_interval, common) {
 
 
 //Truncate Labels
-function truncate_label(label, duration, container_width, total_length_x) {
-    let available_width = ((container_width - 90) / total_length_x) * duration;
+function truncate_label(label, duration, container_width, visible_seconds) {
+    if (!label) label = "Not Specified";
+    let available_width = ((container_width - 90) / visible_seconds) * duration;
     let max_chars = Math.floor(available_width / 6);
     
     if (max_chars < 1) return "";
@@ -331,7 +372,7 @@ function truncate_label(label, duration, container_width, total_length_x) {
 
 
 //Timeline Dwellings
-function render_dwelling(session_dwellings, container, total_length_x, common, plot_width) {
+function render_dwelling(session_dwellings, container, total_length_x, common, plot_width, visible_seconds) {
     let old = container.querySelector(".dwelling-plot");
     if (old) old.remove();
     let plot_timeline_dwelling = Plot.plot({
@@ -344,16 +385,15 @@ function render_dwelling(session_dwellings, container, total_length_x, common, p
         }),
         Plot.rectX(session_dwellings, 
                         {x1: "start", x2: "end", y1: 0, y2: 1, fill: "#d1d1d1",
-                        stroke: "#8a8a8a", strokeWidth: 0.5,
+                        stroke: "#8a8a8a", strokeWidth: 0.5, clip: true,
                         title: dwell => `Dwelling\nFocus on: ${comp_labels[dwell.component]}\nLength: ${(dwell.end - dwell.start).toFixed(2)}s`}),
             Plot.text(session_dwellings, {x: dwell => (dwell.start + dwell.end) / 2, y: 0.5, 
                     text: dwell => {
                         let label = comp_labels[dwell.component];
                         let dwell_duration = dwell.end - dwell.start;
-                        return truncate_label(label, dwell_duration, plot_width, total_length_x);
+                        return truncate_label(label, dwell_duration, plot_width, visible_seconds ?? total_length_x);
                     } ,
-                        fontSize: 9, fontWeight: "bold",
-                        pointerEvents: "none"
+                        fontSize: 9, fontWeight: "bold", pointerEvents: "none", clip: true,
                 })
         ]
     });
@@ -361,12 +401,12 @@ function render_dwelling(session_dwellings, container, total_length_x, common, p
     plot_timeline_dwelling.style.margin = "0";
     plot_timeline_dwelling.style.display = "block";
     plot_timeline_dwelling.style.minWidth = plot_width + "px";
-    container.appendChild(plot_timeline_dwelling);
+    container.querySelector(".histo-plot").after(plot_timeline_dwelling);;
 }
 
 
 //Timeline Hovering
-function render_hover(session_hoverings, container, total_length_x, common, plot_width) {
+function render_hover(session_hoverings, container, total_length_x, common, plot_width, visible_seconds) {
     let old = container.querySelector(".hovering-plot");
     if (old) old.remove();
     let plot_timeline_hovering = Plot.plot({
@@ -379,16 +419,17 @@ function render_hover(session_hoverings, container, total_length_x, common, plot
             }),
             Plot.rectX(session_hoverings, 
                           {x1: "start", x2: "end", y1: 0, y2: 1, fill: "#c3a8c9",
-                          stroke: "#836f88", strokeWidth: 0.5,
-                          title: hover => `Hovering\nHovering on: ${comp_labels[hover.component]}\nContext: ${context_labels[hover.context]}\nChapter: ${hover.chapter}
-                          \nLength: ${(hover.end - hover.start).toFixed(2)}s`}),
+                          stroke: "#836f88", strokeWidth: 0.5, clip: true,
+                          title: hover => `Hovering\nHovering on: ${comp_labels[hover.component] ?? "Not Specified"}` +
+                          `\nContext: ${context_labels[hover.context] ?? "Not Specified"}\nChapter: ${hover.chapter?? "Not Specified"}` +
+                          `\nLength: ${(hover.end - hover.start).toFixed(2) === "0.00" ? "<0.01" : (hover.end - hover.start).toFixed(2)}s`}),
                 Plot.text(session_hoverings, {x: hover => (hover.start + hover.end) / 2, y: 0.5, 
                         text: hover => {
                             let label = comp_labels[hover.component];
                             let hover_duration = hover.end - hover.start;
-                            return truncate_label(label, hover_duration, plot_width, total_length_x);
-                        } ,
-                            fontSize: 9, fontWeight: "bold", pointerEvents: "none"
+                            return truncate_label(label, hover_duration, plot_width, visible_seconds ?? total_length_x);
+                        },
+                            fontSize: 9, fontWeight: "bold", pointerEvents: "none", clip: true,
                     })
             ]
         });  
@@ -396,10 +437,25 @@ function render_hover(session_hoverings, container, total_length_x, common, plot
     plot_timeline_hovering.style.margin = "0";
     plot_timeline_hovering.style.display = "block";
     plot_timeline_hovering.style.minWidth = plot_width + "px";
-    container.appendChild(plot_timeline_hovering); 
+    container.querySelector(".dwelling-plot").after(plot_timeline_hovering);    
 }
 
-
+function calc_y_max(events, active_types, bin_interval, domain) {
+    if (active_types.size === 0) return 0;
+    let bin_gen = d3.bin()
+        .value(data => data.time)
+        .domain(domain)
+        .thresholds(d3.range(domain[0], domain[1] + bin_interval, bin_interval));
+    
+    let global_max = 0;
+    for (let type of active_types) {
+        let bins = bin_gen(events.filter(event => event.type === type));
+        for (let bin of bins) {
+            if (bin.length > global_max) global_max = bin.length;
+        }
+    }
+    return global_max;
+}
 
 function renderSessionStream(session_id, user) {
     let container = document.getElementById("stream-chart");
@@ -411,10 +467,10 @@ function renderSessionStream(session_id, user) {
 
     let session_time_max = Math.max(...events.map(dic => dic.time));
     let total_length_x = session_time_max * 1.05;
-    let bin_interval = session_time_max / 100;
+    let full_bin_interval = total_length_x / 100;
 
     let container_width = document.getElementById("stream-container").clientWidth;
-    px_per_second = container_width / total_length_x;
+    px_per_second = container_width / total_length_x; //px per second
     let min_pps = px_per_second;
 
     let keypress_events = events.filter(event => event.type === "KEYPRESS");
@@ -430,20 +486,83 @@ function renderSessionStream(session_id, user) {
     }); 
     
     let common = {domain: [0, total_length_x], grid: true};
-
     let active_types = new Set(types);
-    render_legend(container, active_types, events, bin_interval, common);
-    render_hist(events, active_types, container, bin_interval, common, container_width);
-    render_dwelling(session_dwellings, container, total_length_x, common, container_width);
-    render_hover(session_hoverings, container, total_length_x, common, container_width)
+    let y_max = null;
+    let scrollbar_max = null;
+    let cached_zoom = null;
+    let pps_at_max1 = null;
 
-    return () => {
+    render_legend(container, active_types, events, full_bin_interval, common);
+    render_hist(events, active_types, container, full_bin_interval, common, container_width, null);
+    render_dwelling(session_dwellings, container, total_length_x, common, container_width, null);
+    render_hover(session_hoverings, container, total_length_x, common, container_width, null)
+
+    //Scrollbar
+    let scrollbar_container = document.createElement("div");
+    scrollbar_container.style.cssText = "margin-left: 65px;";
+    scrollbar_container.style.display = "none";
+    let scrollbar = document.createElement("input");
+    scrollbar.type = "range"; scrollbar.min = 0; scrollbar.max = 0; scrollbar.value = 0;
+    scrollbar.step = "any"; ; scrollbar.style.cssText = "width: 100%;"; 
+    scrollbar.classList.add("stream-scrollbar");
+    scrollbar_container.appendChild(scrollbar);
+    container.appendChild(scrollbar_container);
+    
+    scrollbar.addEventListener("input", (_) => {
+    offset = parseFloat(scrollbar.value);
+    if (!rerender) return;
+    rerender();
+    });
+
+    return (_) => {
         px_per_second = Math.max(px_per_second, min_pps);
-        let plot_width = total_length_x * px_per_second;
-        render_hist(events, active_types, container, bin_interval, common, plot_width);
-        render_dwelling(session_dwellings, container, total_length_x, common, plot_width);
-        render_hover(session_hoverings, container, total_length_x, common, plot_width);
+        let visible_seconds = container_width / px_per_second; //sec in container
+        offset = Math.max(Math.min(offset, total_length_x - visible_seconds), 0);
+        let bin_interval = visible_seconds / 100;
+        scrollbar_max = total_length_x - visible_seconds;
+        scrollbar.max = total_length_x - visible_seconds; scrollbar.value = offset;
+        scrollbar_container.style.display = scrollbar_max === 0 ? "none" : "block";
+        let new_common = {domain: [offset, offset + visible_seconds], grid: true};
+        if (px_per_second !== cached_zoom || leg_activate) {
+            let zooming_in = cached_zoom !== null && px_per_second > cached_zoom;
+            if (leg_activate || (y_max > 1) || (zooming_in === false && pps_at_max1 === null)) {
+                y_max = calc_y_max(events, active_types, bin_interval, [0, total_length_x]);
+                if (y_max === 1 && zooming_in) pps_at_max1 = px_per_second;
+                if (y_max > 1) pps_at_max1 = null; 
+            } else if (!zooming_in && pps_at_max1 !== null && px_per_second < pps_at_max1 * 0.4) {
+                y_max = calc_y_max(events, active_types, bin_interval, [0, total_length_x]);
+                pps_at_max1 = null;
+            }
+            cached_zoom = px_per_second;
+        }
+        render_hist(events, active_types, container, bin_interval, new_common, container_width, y_max);
+requestAnimationFrame(() => {
+    let bars = container.querySelectorAll('.histo-plot [aria-label="rect"] rect');
+    let events_in_view = events.filter(e => 
+        active_types.has(e.type) &&
+        e.time >= new_common.domain[0] && 
+        e.time <= new_common.domain[1]
+    ).length;
+
+    if (bars.length === 0 && events_in_view > 0) {
+        console.log("GLITCH detected — events in view:", events_in_view);
+        let fixed = false;
+        let multiplier = 1.001;
+        for (let i = 0; i < 10; i++) {
+            render_hist(events, active_types, container, bin_interval * multiplier, new_common, container_width, y_max);
+            let bars_after = container.querySelectorAll('.histo-plot [aria-label="rect"] rect');
+            if (bars_after.length > 0) { fixed = true; break; }
+            multiplier += 0.001;
+        }
+        last_bar_count = fixed ? 1 : 0;
+    } else {
+        last_bar_count = bars.length;
+    }
+});
+        render_dwelling(session_dwellings, container, total_length_x, new_common, container_width, visible_seconds);
+        render_hover(session_hoverings, container, total_length_x, new_common, container_width, visible_seconds);
     };
+
     }    
 
 load_data();

@@ -8,6 +8,10 @@
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
     <script src="https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6"></script>
     <script src = "https://d3js.org/d3.v7.min.js"></script>
+
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://css-tricks.github.io/AnythingZoomer/js/jquery.anythingzoomer.js"></script>
+<link rel="stylesheet" href="https://css-tricks.github.io/AnythingZoomer/css/anythingzoomer.css">
     
     <style>
         body { background-color: #f8f9fa; height: 100vh; overflow: hidden; display: flex; }
@@ -23,9 +27,12 @@
         .section-label { font-size: 0.8rem; letter-spacing: 0.05rem; }
         #summary-grid-container {display: grid; grid-template-columns: 1fr 1fr 1fr; width: 100%;}
         #style{background: #f8f9fa; padding: 15px; border-radius: 8px;}
-        #stream-chart {width: 0; min-width: 100%; overflow-x: auto; overflow-y: visible;}
-        #stream-chart svg {max-width: none !important;}
+        #stream-chart {width: 0; min-width: 100%; overflow: hidden;}
         #stream-container{overflow: visible; contain: layout;}
+
+.az-zoom { width: 250px; height: 50px; }
+#hover-wrapper .large { visibility: hidden; }
+#hover-wrapper .az-zoom .large { visibility: visible; }
  </style>
 </head>
 <body>
