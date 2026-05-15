@@ -98,6 +98,7 @@ async def get_all_users_aggregated():
                         current_session_events.append({
                             "time": timestamp(event, session_start),
                             "type": "MOUSE_SCROLL",
+                            "direction": "Up" if event.type == 2 else "Down",
                             "component": to_val(event.component),
                             "chapter": to_val(event.chapter)
                             })
@@ -129,8 +130,9 @@ async def get_all_users_aggregated():
                         "component": to_val(dwelling.component),
                         "start": start_dwelling,
                         "end": end_dwelling,
-                        #"chapter": to_val(event.chapter)
+                        "chapter": to_val(dwelling.chapter)
                         })
+
 
                 session.compute_hoverings()
                 for hovering in session.hoverings:
@@ -138,6 +140,7 @@ async def get_all_users_aggregated():
                     end_hover = (hovering.to_ts - session.from_ts).total_seconds()
                     session_hoverings.append({
                     "component": hovering.component,
+                    #had to add 0.001 sconds because otherwise it would have been 0.0 sec length
                     "start": start_hover - 0.001 if end_hover == start_hover else start_hover,
                     "end": end_hover + 0.001 if end_hover == start_hover else end_hover,
                     "chapter": hovering.chapter,
@@ -150,6 +153,8 @@ async def get_all_users_aggregated():
                     "events": current_session_events,
                     "dwellings": session_dwellings, 
                     "hoverings": session_hoverings,
+                    "init_type": to_val(session._initialization_type),
+                    "fin_type": to_val(session._finalization_type)
                 }
 
             task_total_events = key_presses + mouse_scrolls + mouse_clicks + mouse_move
