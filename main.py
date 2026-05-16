@@ -4,30 +4,16 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import guidaeta
 import numpy as np
+from pathlib import Path
+import webbrowser
+import asyncio
+import os
+import signal
 
 DATA_ROOT = "Data"
 
 
-db = {}
-
-@asynccontextmanager
-async def lifespan(app):
-    print("Loading the Data. Please wait a moment...")
-    db["sentences"], db["sessions"], db["users"], db["tasks"] = guidaeta.load_data(DATA_ROOT)
-    yield
-    db.clear()
-
-app = FastAPI(lifespan = lifespan)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins = ["*"],
-    allow_methods = ["*"],
-    allow_headers = ["*"],
-)
-
-
-@app.get("/users")
-async def get_all_users_aggregated():
+def get_all_users_aggregated():
     #small helper
     def to_val(val):
         if val is None or val =="na":
@@ -201,5 +187,41 @@ async def get_all_users_aggregated():
         })
     return output
 
-#if __name__ == "__main__":
-#    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=False)
+db = {}
+ready = False
+
+async def load_in_background():
+    global ready
+    loop = asyncio.get_running_loop()
+    db["sentences"], db["sessions"], db["users"], db["tasks"] = await loop.run_in_executor(None, guidaeta.load_data, DATA_ROOT)
+    db["aggregated"] = await loop.run_in_executor(None, get_all_users_aggregated)
+    ready = True
+
+@asynccontextmanager
+async def lifespan(app):
+    global ready
+    ready = False
+    webbrowser.open(Path("index.html").resolve().as_uri())
+    asyncio.create_task(load_in_background())
+    yield
+    db.clear()
+
+
+app = FastAPI(lifespan = lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins = ["*"],
+    allow_methods = ["*"],
+    allow_headers = ["*"],
+)
+
+@app.get("/status")
+def status():
+    return {"ready": ready}
+
+@app.get("/users")
+def get_users():
+    return db["aggregated"]
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host = "127.0.0.1", port = 8000, reload = False)

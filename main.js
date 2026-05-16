@@ -100,7 +100,6 @@ function show_details(user_id, click) {
 function render_list(users_array) {
     let count_element = document.getElementById("user-count");
     count_element.innerText = `(${users_array.length} IDs)`;
-
     let user_id_list = document.getElementById("id-list");
     user_id_list.innerHTML = users_array.map(user => `
         <div class = "user-card" onclick = "show_details(${user.id}, this)">
@@ -112,11 +111,21 @@ function render_list(users_array) {
     
 
 //init
+async function wait_for_ready() {
+        let response = await fetch("http://127.0.0.1:8000/status");
+        let data = await response.json();
+        if (data.ready) {
+            load_data();
+        } else {
+            setTimeout(wait_for_ready, 500);
+        };
+    };
+wait_for_ready();
+
 let all_users = [];
 async function load_data(){
     let response = await fetch("http://127.0.0.1:8000/users");
     all_users = await response.json();
     render_list(all_users);
-}
-
-load_data();
+    document.getElementById("loading-screen").style.display = "none";
+};
