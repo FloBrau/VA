@@ -11,6 +11,11 @@ body {background-color: #f8f9fa;
       overflow: hidden;
       display: flex}
 
+
+#filter-container {--bs-card-border-radius: 0} 
+.form-control, 
+.form-select,
+.btn {border-radius: 0}  
 .sidebar {width: 320px;
           overflow-y: auto;
           background: white;
@@ -34,7 +39,6 @@ body {background-color: #f8f9fa;
                    background-color: #e7f1ff}
                  
 .viz-container {background: white; 
-                border-radius: 8px; 
                 padding: 20px; 
                 box-shadow: 0 2px 4px rgba(0,0,0,0.05)}
 
@@ -75,3 +79,22 @@ th {font-weight: 500}
                    contain: layout}
 
 [data-bs-toggle = "collapse"] td {border-bottom: none}
+
+#ex-det {font-size: 15px;
+         display: block;
+         margin-top: 50px}
+
+#ex-det-name {font-size: 12px;
+              color: #6c757d;
+              display: block;
+              margin-top: 2px}   
+         
+#scatter-chart circle {
+    transition: 0.1s;
+    cursor: pointer;
+}              
+#scatter-chart circle:hover {
+    fill: #0d6efd;
+    stroke: black;
+    stroke-width: 0.8px;
+}              

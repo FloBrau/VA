@@ -363,7 +363,7 @@ function render_session(session_id, user, container) {
 
         //max zoom request
         requestAnimationFrame((_) => {
-            let ticks = container.querySelectorAll(".hovering-plot [aria-label='x-axis tick label'] text");
+            let ticks = container.querySelectorAll(".hovering-plot [aria-label = 'x-axis tick label'] text");
             let decimals = ticks[1].textContent.split(".")[1] ?? "";
             max_zoom_reached = decimals.length > 2;
         });

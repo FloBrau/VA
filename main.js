@@ -1,10 +1,12 @@
 function show_details(user_id, click) {
     //SELECT/UNSELECT USER
+    document.getElementById("main-page").style.display = "none";
     let was_active = click.classList.contains("active");
     document.querySelectorAll(".user-card").forEach(cl => cl.classList.remove("active"));
     let detail_view = document.getElementById("detail-view");
     if (was_active) {
         detail_view.classList.add("d-none");
+        document.getElementById("main-page").style.display = "block";
         return
     } else {
         click.classList.add("active");
@@ -106,6 +108,7 @@ function render_list(users_array) {
             <strong style = "font-weight: 600;">ID ${user.id}</strong>
         </div>
     `).join("");
+    render_scatter(users_array);
 }
 
     

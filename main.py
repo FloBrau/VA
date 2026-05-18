@@ -7,8 +7,7 @@ import numpy as np
 from pathlib import Path
 import webbrowser
 import asyncio
-import os
-import signal
+import random
 
 DATA_ROOT = "Data"
 
@@ -183,7 +182,10 @@ def get_all_users_aggregated():
             "total_sessions": sum(task["num_sessions"] for task in task_performance_list),
             "total_task_duration": sum(task["task_duration"] for task in task_performance_list),
             "task_performance": task_performance_list,
-            "interaction_streams": interaction_streams
+            "interaction_streams": interaction_streams,
+
+            "pca1": random.uniform(-3, 3),
+            "pca2": random.uniform(-3, 3),
         })
     return output
 
