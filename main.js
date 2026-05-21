@@ -119,6 +119,7 @@ function render_list(users_array) {
 let current_task = 1;
 function switch_task(task_no) {
     scatter_zoom_transform = null;
+    group_counter = 0;
     current_task = task_no;
     group = [];
     render_groups();
