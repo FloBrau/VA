@@ -5,7 +5,7 @@
     <title>GUIDÆTA</title>
     <link href = "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src = "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <link rel = "stylesheet" href="stylesheet.css">
+    <link rel = "stylesheet" href = "stylesheet.css">
     <script src = "https://cdn.jsdelivr.net/npm/d3@7"></script>
     <script src = "https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6"></script>
     </head>
@@ -25,12 +25,12 @@
                 <div class = "col-6">
                     <input type = "number" id = "filter-age-min" class = "form-control form-control-sm" placeholder = "Min" min = "0">
                 </div>
-                <div class="col-6">
+                <div class = "col-6">
                     <input type = "number" id = "filter-age-max" class = "form-control form-control-sm" placeholder = "Max" min = "0">
                 </div>
             </div>
             
-            <div class="mb-2">
+            <div class = "mb-2">
                 <label class = "x-small">Gender</label>
                 <select id = "filter-gender" class = "form-select form-select-sm">
                     <option value = "">All Genders</option><option value = "m">Male</option>
@@ -118,6 +118,16 @@
                                 </div>
                             </div>
 
+                            <label class="x-small">SUS Score</label>
+                            <div class = "row g-2 mb-2">
+                                <div class = "col-6">
+                                    <input type = "number" id="filter-sus-score-min" class = "form-control form-control-sm" placeholder = "Min">
+                                </div>
+                                <div class = "col-6">
+                                    <input type="number" id = "filter-sus-score-max" class="form-control form-control-sm" placeholder="Max">
+                                </div>
+                            </div>
+
                             <label class = "x-small">Avg. Diabetes Knowledge (DKT2 score) (%)</label>
                             <div class = "row g-2 mb-2">
                                 <div class = "col-6">
@@ -187,6 +197,16 @@
                                     <input type = "number" id = "filter-total-sessions-max" class = "form-control form-control-sm" placeholder = "Max" min = "0">
                                 </div>
                             </div>
+
+                            <label class = "x-small">Avg. Correctness (%)</label>
+                            <div class = "row g-2 mb-2">
+                                <div class = "col-6">
+                                    <input type = "number" id = "filter-corr-min" class = "form-control form-control-sm" placeholder = "Min">
+                                </div>
+                                <div class = "col-6">
+                                    <input type = "number" id = "filter-corr-max" class = "form-control form-control-sm" placeholder = "Max">
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -195,19 +215,32 @@
             <button class = "btn btn-sm btn-outline-danger w-100 mt-3" onclick = "reset_filters()">Reset All Filter</button>
         </div>
     </div>
-    <div id = "user-count" class = "small fw-bold mb-2 text-primary" style = "font-weight: 600">
+    <div id = "user-count" class = "small fw-bold mb-2 text-primary" style = "font-weight: 600; font-size: 0.875rem;">
     </div>
     <div id = "id-list">
         <div class = "text-center p-3 text-muted small"></div>
     </div>
 </div>
-
 <main class = "main-content">
+    <h2 id = "scatter-title" class = "display-6 mb-4" style = "font-weight: 400">User Overview</h2>
     <div class = "viz-container" id = "main-page"> 
-        <h5>User Overview</h5>
-        <div id = "scatter-chart"></div>
+        <div class = "row g-0">
+            <div class = "col-md-6" id = "scatter-chart" style = "overflow: hidden"></div>
+            <div class = "col-md-6 ps-3 d-flex gap-2" style = "overflow: hidden">
+                <div class = "d-flex align-items-center flex-column gap-3 justify-content-center">
+                    <div class = "d-flex align-items-center gap-2 mb-2" style = "font-size: 0.875rem; font-weight: 600">
+                        <label>Task:</label>
+                        <input type = "number" min = "1" max = "3" value = "1" class = "form-control form-control-sm" style = "width: 2.8rem; font-size: 0.875rem"
+                            oninput = "switch_task(parseInt(this.value))">
+                    </div>
+                    <button onclick = "new_group()" class = "btn btn-sm btn-outline-primary" style = "font-size: 0.875rem">+ Group</button>
+                </div>
+                <div id = "group-list" style = "flex:1; min-width: 0" class = "d-flex flex-column align-items-center"></div>
+            </div>
         </div>
     </div>
+
+    
     <div id = "detail-view" class = "d-none">
         <div class = "d-flex justify-content-between align-items-center mb-4">
             <h2 id = "u-title" class = "display-6" style = "font-weight: 400;">User Details</h2>
@@ -260,6 +293,7 @@
 </main>
 <script src = "utils.js"></script>
 <script src = "filters.js"></script>
+<script src = "scatter_filter.js"></script>
 <script src = "stream.js"></script>
 <script src = "scatter.js"></script>
 <script src = "main.js"></script>

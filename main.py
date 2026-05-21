@@ -7,15 +7,68 @@ import numpy as np
 from pathlib import Path
 import webbrowser
 import asyncio
-import random
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 
 DATA_ROOT = "Data"
+
+#PCA calculation part
+PCA_features = [
+    "task_duration",
+    "clicks",
+    "avg_cognitive_load",
+]
+
+def compute_pca_per_task(output: list) -> None:
+    task_nos = sorted({
+        tp["task_no"]
+        for user in output
+        for tp in user["task_performance"]
+    })
+
+    for task_no in task_nos:
+
+        entries = []
+        for u_idx, user in enumerate(output):
+            for t_idx, tp in enumerate(user["task_performance"]):
+                if tp["task_no"] == task_no:
+                    vec = [tp.get(feat, -1) for feat in PCA_features]
+                    entries.append((u_idx, t_idx, vec))
+
+
+        X = np.array([e[2] for e in entries], dtype=float)
+
+        X[X == -1.0] = np.nan
+        col_means = np.nanmean(X, axis=0)
+        nan_positions = np.isnan(X)
+        X[nan_positions] = np.take(col_means, np.where(nan_positions)[1])
+
+        stds = X.std(axis=0)
+        valid_cols = stds > 1e-8
+        X_filtered = X[:, valid_cols]
+        features_used = [f for f, keep in zip(PCA_features, valid_cols) if keep]
+
+        if X_filtered.shape[1] == 0:
+            continue
+
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X_filtered)
+
+        n_components = min(2, X_scaled.shape[1], X_scaled.shape[0])
+        pca = PCA(n_components=n_components)
+        scores = pca.fit_transform(X_scaled)
+
+        for i, (u_idx, t_idx, _) in enumerate(entries):
+            tp = output[u_idx]["task_performance"][t_idx]
+            tp["pca_x"] = float(scores[i, 0]) if n_components >= 1 else 0.0
+            tp["pca_y"] = float(scores[i, 1]) if n_components >= 2 else 0.0
+
 
 
 def get_all_users_aggregated():
     #small helper
     def to_val(val):
-        if val is None or val =="na":
+        if val is None or val == "na":
             return -1
         return val.value if hasattr(val, "value") else val
     
@@ -159,7 +212,7 @@ def get_all_users_aggregated():
                 "key_presses": key_presses,
                 "mouse_move": mouse_move,
             })
-
+                
         output.append({
             "id": user.id,
             "age": to_val(user.age),
@@ -183,10 +236,10 @@ def get_all_users_aggregated():
             "total_task_duration": sum(task["task_duration"] for task in task_performance_list),
             "task_performance": task_performance_list,
             "interaction_streams": interaction_streams,
-
-            "pca1": random.uniform(-3, 3),
-            "pca2": random.uniform(-3, 3),
         })
+
+    compute_pca_per_task(output)
+
     return output
 
 db = {}
@@ -213,6 +266,7 @@ app = FastAPI(lifespan = lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins = ["*"],
+    allow_credentials = True,
     allow_methods = ["*"],
     allow_headers = ["*"],
 )
@@ -226,4 +280,4 @@ def get_users():
     return db["aggregated"]
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host = "127.0.0.1", port = 8000, reload = False)
+    uvicorn.run(app, host = "127.0.0.1", port = 8000)

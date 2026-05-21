@@ -57,8 +57,9 @@ th {font-weight: 500}
                    padding: 10px 0}
 
 .section-label {font-size: 13px;
-                letter-spacing: 1px;}
+                letter-spacing: 1px}
 
+.table {font-size: 0.938rem}
 #summary-grid-container {display: grid;
                          grid-template-columns: max-content max-content max-content; 
                          width: 100%;
@@ -89,12 +90,20 @@ th {font-weight: 500}
               display: block;
               margin-top: 2px}   
          
-#scatter-chart circle {
-    transition: 0.1s;
-    cursor: pointer;
-}              
-#scatter-chart circle:hover {
-    fill: #0d6efd;
-    stroke: black;
-    stroke-width: 0.8px;
-}              
+#scatter-chart circle {transition: 0.1s;
+                       cursor: pointer;}              
+#scatter-chart circle:hover {fill-opacity: 1;
+                             stroke: black;
+                             stroke-width: 0.08rem;}   
+                             
+.filter-tag {background: #f1f3f5;
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 3px;}   
+            
+#group-list {overflow-y: auto;
+             max-height: 100%;
+            scrollbar-gutter: stable;}            

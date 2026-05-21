@@ -65,9 +65,6 @@ container.addEventListener("mousemove", (event) => {
     
 
 
-
-
-
 //Histo     
 function render_hist(events, active_types, container, bin_interval, common, plot_width, y_max = null) {
     let main = document.querySelector(".main-content");
