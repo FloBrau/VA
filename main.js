@@ -1,3 +1,4 @@
+//Detail card of a user 
 function show_details(user_id, click) {
     //SELECT/UNSELECT USER
     document.getElementById("main-page").style.display = "none";
@@ -116,6 +117,7 @@ function render_list(users_array) {
     render_scatter(users_array, current_task);
 }
 
+//Reset groups and switch task in scatter plot
 let current_task = 1;
 function switch_task(task_no) {
     scatter_zoom_transform = null;

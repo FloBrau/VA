@@ -10,7 +10,7 @@ import asyncio
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 
-DATA_ROOT = "Data"
+DATA_ROOT = "Data"  # <---- change the root right here if you've stored the GUIDÆTA dataset somewhere else (read README.md)!
 
 #PCA calculation part
 PCA_features = [
@@ -64,14 +64,18 @@ def compute_pca_per_task(output: list) -> None:
             tp["pca_y"] = float(scores[i, 1]) if n_components >= 2 else 0.0
 
 
-
+#Calculating all relevevant data
 def get_all_users_aggregated():
-    #small helper
+
+    #small helpers
+    #Function to get the value fast or code na and None as -1
     def to_val(val):
         if val is None or val == "na":
             return -1
         return val.value if hasattr(val, "value") else val
     
+
+    #Get timestamp
     def timestamp(event, session_start):
         return (event.timestamp - session_start).total_seconds()
 
@@ -163,13 +167,12 @@ def get_all_users_aggregated():
                 for dwelling in session.dwellings:
                     start_dwelling = (dwelling.from_ts - session.from_ts).total_seconds()
                     end_dwelling = (dwelling.to_ts - session.from_ts).total_seconds()
-                    if end_dwelling - start_dwelling >= 1:
-                        session_dwellings.append({
-                        "component": to_val(dwelling.component),
-                        "start": start_dwelling,
-                        "end": end_dwelling,
-                        "chapter": to_val(dwelling.chapter)
-                        })
+                    session_dwellings.append({
+                    "component": to_val(dwelling.component),
+                    "start": start_dwelling,
+                    "end": end_dwelling,
+                    "chapter": to_val(dwelling.chapter)  
+                    }) 
 
 
                 session.compute_hoverings()
@@ -178,7 +181,7 @@ def get_all_users_aggregated():
                     end_hover = (hovering.to_ts - session.from_ts).total_seconds()
                     session_hoverings.append({
                     "component": hovering.component,
-                    #had to add 0.001 sconds because otherwise it would have been 0.0 sec length
+                    #Very important: !!!! had to add 0.001 sconds because otherwise it would have been 0.0 sec length !!!!
                     "start": start_hover - 0.001 if end_hover == start_hover else start_hover,
                     "end": end_hover + 0.001 if end_hover == start_hover else end_hover,
                     "chapter": hovering.chapter,
@@ -245,6 +248,8 @@ def get_all_users_aggregated():
 db = {}
 ready = False
 
+
+#Loading the data + asyncio for loading screen
 async def load_in_background():
     global ready
     loop = asyncio.get_running_loop()
@@ -252,8 +257,10 @@ async def load_in_background():
     db["aggregated"] = await loop.run_in_executor(None, get_all_users_aggregated)
     ready = True
 
+
+#FastAPI lifespan function
 @asynccontextmanager
-async def lifespan(app):
+async def lifespan(_):
     global ready
     ready = False
     webbrowser.open(Path("index.html").resolve().as_uri())
@@ -263,6 +270,7 @@ async def lifespan(app):
 
 
 app = FastAPI(lifespan = lifespan)
+#extra middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins = ["*"],
@@ -271,13 +279,16 @@ app.add_middleware(
     allow_headers = ["*"],
 )
 
+#Get for the loading screen (ready is only True if the server is ready and all data is loaded)
 @app.get("/status")
 def status():
     return {"ready": ready}
 
+#Get for user data
 @app.get("/users")
 def get_users():
     return db["aggregated"]
 
-if __name__ == "__main__":
+#Startup with uvicorn
+if __name__ == "__main__": #for good practice
     uvicorn.run(app, host = "127.0.0.1", port = 8000)

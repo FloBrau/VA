@@ -1,3 +1,4 @@
+//preperation used for our filters
 let edu_ranking = {"compulsoryschool": 1, "apprenticeship": 2, "highschool": 3, "university": 4, "": ""};
 let filter_list_dict = [
     {key: "age", type: "num", id_min: "filter-age-min",id_max: "filter-age-max", label: "Age"},
@@ -22,6 +23,7 @@ let filter_list_dict = [
 ];
 
 
+//Masking function used in applsy filters
 function check_user(user, filters) {
     return filters.every(filter => {
         if (filter.type === "cat") return filter.value === "" || String(user[filter.key]) === String(filter.value);
@@ -32,6 +34,8 @@ function check_user(user, filters) {
     });
 };
 
+
+//Applying the filters with check_user 
 function apply_filters() {
     let filters = filter_list_dict.map(filter => filter.type === "cat"
         ? {...filter, value: get_easy(filter.id)}
@@ -40,15 +44,17 @@ function apply_filters() {
     render_list(all_users.filter(user => check_user(user, filters)));
 };
 
+
+//reset all filters
 function reset_filters() {
     filter_list_dict.forEach(filter => {
-            let id = filter.id || filter.id_min;
         let element = document.getElementById(filter.id || filter.id_min);
         element.tagName === "SELECT" ? element.selectedIndex = 0 : element.value = "";
         if (filter.id_max) document.getElementById(filter.id_max).value = "";
     });
     render_list(all_users);
 }
+
 
 let all_ids = filter_list_dict.map(filter => filter.type === "cat" ? `#${filter.id}` :
      `#${filter.id_min}, #${filter.id_max}`).join(", ");

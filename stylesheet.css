@@ -16,48 +16,47 @@ body {background-color: #f8f9fa;
 .form-control, 
 .form-select,
 .btn {border-radius: 0}  
-.sidebar {width: 320px;
+.sidebar {width: 20rem;
           overflow-y: auto;
           background: white;
           border-right: 1px solid #dee2e6;
-          padding: 20px;
+          padding: 1.25rem;
           scrollbar-gutter: stable}
 
 .main-content {flex-grow: 1;
                overflow-y: auto;
-               padding: 30px;
+               padding: 1.875rem;
                min-width: 0;
                scrollbar-gutter: stable}
 
 .user-card {cursor: pointer;
-            border-left: 5px solid transparent;
+            border-left: 0.313rem solid transparent;
             transition: 0.2s;
             border-bottom: 1px solid #eee;
-            padding: 15px}
+            padding: 0.9375rem}
 .user-card:hover {background-color: #f1f3f5}
 .user-card.active {border-left-color: #0d6efd;
                    background-color: #e7f1ff}
                  
 .viz-container {background: white; 
-                padding: 20px; 
-                box-shadow: 0 2px 4px rgba(0,0,0,0.05)}
+                padding: 1.25rem; 
+                box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.05)}
 
 th {font-weight: 500}                
 
-.x-small {font-size: 11.5px;
+.x-small {font-size: 0.75rem;
           color: #6c757d;
           display: block;
-          margin-bottom: 2px;
+          margin-bottom: 0.125rem;
           font-weight: 600}
 
 .accordion-button:not(.collapsed) {background-color: transparent;
                                    color: #0d6efd;
                                    box-shadow: none}
-.accordion-button {font-size: 13.5px; 
-                   padding: 10px 0}
+.accordion-button {font-size: 0.813rem; 
+                   padding: 0.625rem 0}
 
-.section-label {font-size: 13px;
-                letter-spacing: 1px}
+.section-label {font-size: 0.813rem}
 
 .table {font-size: 0.938rem}
 #summary-grid-container {display: grid;
@@ -81,29 +80,29 @@ th {font-weight: 500}
 
 [data-bs-toggle = "collapse"] td {border-bottom: none}
 
-#ex-det {font-size: 15px;
+#ex-det {font-size: 0.9375rem;
          display: block;
-         margin-top: 50px}
+         margin-top: 3.125rem}
 
-#ex-det-name {font-size: 12px;
+#ex-det-name {font-size: 0.75rem;
               color: #6c757d;
               display: block;
-              margin-top: 2px}   
+              margin-top: 0.125rem}   
          
 #scatter-chart circle {transition: 0.1s;
-                       cursor: pointer;}              
+                       cursor: pointer}
 #scatter-chart circle:hover {fill-opacity: 1;
                              stroke: black;
-                             stroke-width: 0.08rem;}   
+                             stroke-width: 0.08rem}   
                              
 .filter-tag {background: #f1f3f5;
             border-radius: 3px;
-            padding: 2px 6px;
-            font-size: 11px;
+            padding: 0.125rem 0.375rem;
+            font-size: 0.6875rem;
             display: flex;
             align-items: center;
-            gap: 3px;}   
+            gap: 0.1875rem}   
             
 #group-list {overflow-y: auto;
              max-height: 100%;
-            scrollbar-gutter: stable;}            
+            scrollbar-gutter: stable}            

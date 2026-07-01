@@ -16,7 +16,7 @@ let legend_labels = ["Mouse Move", "Mouse Scroll", "Keypress", "Mouse Click"];
 
 
 
-
+//main fcuntion for different streams
 function create_stream(task_no, session_id, user) {
 let container = document.getElementById(`stream-chart-${task_no}`);
 
@@ -25,7 +25,6 @@ let px_per_second = null;
 let offset = 0;
 let rerender = null;
 let max_zoom_reached = null
-let last_bar_count = 0;
 
 
 //Zoom
@@ -332,6 +331,8 @@ function render_session(session_id, user, container) {
     rerender();
     });
 
+
+    //main rerender function used in every dynamic update
     return (_) => {
         px_per_second = Math.max(px_per_second, min_pps);
         let visible_seconds = container_width / px_per_second; //sec in container
@@ -339,7 +340,7 @@ function render_session(session_id, user, container) {
         let bin_interval = visible_seconds / 90;
         scrollbar_max = total_length_x - visible_seconds;
         scrollbar.max = total_length_x - visible_seconds; scrollbar.value = offset;
-        scrollbar_container.style.display = scrollbar_max < 0.0001 ? "none" : "block"; //weil wegen floating point ... super sache
+        scrollbar_container.style.display = scrollbar_max < 0.0001 ? "none" : "block"; //floating point
         let new_common = {domain: [offset, offset + visible_seconds], grid: true};
         if (px_per_second !== cached_zoom || leg_activate) {
             let zooming_in = cached_zoom !== null && px_per_second > cached_zoom;
